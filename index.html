@@ -10,18 +10,23 @@
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
 
   <style>
-    body {
+    html, body {
       font-family: 'Quicksand', sans-serif;
-      margin: 0;
-      overflow: hidden;
-      background-color: #fff1f2;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      overflow: hidden !important;
+      background-color: #000000;
     }
-    video, .a-canvas {
+    a-scene, video, .a-canvas {
       position: fixed !important;
+      inset: 0 !important;
       top: 0 !important;
       left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
+      width: 100% !important;
+      height: 100% !important;
+      margin: 0 !important;
       object-fit: cover !important;
     }
     input[type="range"] {
@@ -56,7 +61,7 @@
       </button>
     </div>
 
-    <!-- Panel flotante rosita para calibrar el árbol (oculto por defecto) -->
+    <!-- Panel flotante rosita para calibrar el árbol -->
     <div id="calibration-panel" class="hidden pointer-events-auto ml-auto w-full max-w-xs rounded-3xl border-2 border-pink-200 bg-rose-50/95 p-4 backdrop-blur-md shadow-xl space-y-3 text-xs">
       <div class="flex items-center justify-between border-b border-pink-200 pb-2">
         <span class="font-bold text-pink-700">Ajustar Árbol 3D</span>
@@ -153,13 +158,11 @@
     const dot = document.getElementById('tracking-dot');
     const text = document.getElementById('tracking-text');
 
-    // Ocultar pantalla de carga al iniciar NFT
     window.addEventListener('arjs-nft-loaded', () => {
       loadingOverlay.classList.add('hidden');
     });
     setTimeout(() => loadingOverlay.classList.add('hidden'), 6000);
 
-    // Cambiar estado visual cuando encuentra o pierde el marcador
     markerEl.addEventListener('markerFound', () => {
       pill.className = 'pointer-events-auto inline-flex items-center gap-2 rounded-full border border-pink-400 bg-pink-500 px-4 py-2 text-xs font-bold text-white backdrop-blur-md shadow-md';
       dot.className = 'h-2.5 w-2.5 rounded-full bg-white';
@@ -172,7 +175,6 @@
       text.textContent = 'Buscando marcador...';
     });
 
-    // Controles en vivo
     const panel = document.getElementById('calibration-panel');
     document.getElementById('toggle-panel-btn').addEventListener('click', () => {
       panel.classList.toggle('hidden');
