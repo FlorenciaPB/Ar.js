@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>AR NFT - Árbol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+
+  <style>
+    body {
+      font-family: 'Quicksand', sans-serif;
+      margin: 0;
+      overflow: hidden;
+      background-color: #fff1f2;
+    }
+    video, .a-canvas {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+    }
+    input[type="range"] {
+      accent-color: #ec4899;
+    }
+  </style>
+</head>
+<body class="text-rose-950 antialiased">
+
+  <!-- Pantalla de carga rosita -->
+  <div id="loading-overlay" class="fixed inset-0 z-40 flex flex-col items-center justify-center bg-rose-50/95 text-center p-6 backdrop-blur-md">
+    <div class="h-12 w-12 animate-spin rounded-full border-4 border-pink-200 border-t-pink-500 mb-4"></div>
+    <p class="text-base font-bold text-pink-700">Cargando marcador y cámara AR...</p>
+    <p class="text-xs text-pink-500 mt-1">Permite el acceso a la cámara y apunta a tu imagen</p>
+  </div>
+
+  <!-- HUD superior rosado -->
+  <div id="ar-hud" class="fixed inset-0 z-30 pointer-events-none flex flex-col justify-between p-4">
+    <div class="flex items-center justify-between gap-2">
+      <!-- Estado de detección -->
+      <div id="tracking-pill" class="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-pink-300 bg-rose-50/90 px-4 py-2 text-xs font-bold text-pink-700 backdrop-blur-md shadow-md">
+        <span id="tracking-dot" class="h-2.5 w-2.5 rounded-full bg-pink-400 animate-pulse"></span>
+        <span id="tracking-text">Buscando marcador...</span>
+      </div>
+
+      <!-- Botón para abrir/cerrar ajustes -->
+      <button
+        id="toggle-panel-btn"
+        class="pointer-events-auto rounded-full border border-pink-300 bg-pink-500 px-4 py-2 text-xs font-bold text-white backdrop-blur-md hover:bg-pink-600 shadow-md transition"
+      >
+        Ajustes 3D
+      </button>
+    </div>
+
+    <!-- Panel flotante rosita para calibrar el árbol (oculto por defecto) -->
+    <div id="calibration-panel" class="hidden pointer-events-auto ml-auto w-full max-w-xs rounded-3xl border-2 border-pink-200 bg-rose-50/95 p-4 backdrop-blur-md shadow-xl space-y-3 text-xs">
+      <div class="flex items-center justify-between border-b border-pink-200 pb-2">
+        <span class="font-bold text-pink-700">Ajustar Árbol 3D</span>
+        <button id="reset-btn" class="text-pink-500 hover:text-pink-700 font-bold">Reiniciar</button>
+      </div>
+
+      <div>
+        <div class="flex justify-between text-pink-800 font-semibold mb-1">
+          <span>Tamaño</span>
+          <span id="val-scale" class="font-mono text-pink-600">50</span>
+        </div>
+        <input id="ctrl-scale" type="range" min="1" max="300" step="1" value="50" class="w-full cursor-pointer" />
+      </div>
+
+      <div class="space-y-1.5 pt-1 border-t border-pink-200">
+        <div class="flex justify-between text-pink-800 font-semibold">
+          <span>Posición X</span>
+          <span id="val-pos-x" class="font-mono text-pink-600">50</span>
+        </div>
+        <input id="ctrl-pos-x" type="range" min="-300" max="300" step="5" value="50" class="w-full cursor-pointer" />
+
+        <div class="flex justify-between text-pink-800 font-semibold">
+          <span>Posición Y</span>
+          <span id="val-pos-y" class="font-mono text-pink-600">0</span>
+        </div>
+        <input id="ctrl-pos-y" type="range" min="-300" max="300" step="5" value="0" class="w-full cursor-pointer" />
+
+        <div class="flex justify-between text-pink-800 font-semibold">
+          <span>Posición Z</span>
+          <span id="val-pos-z" class="font-mono text-pink-600">-100</span>
+        </div>
+        <input id="ctrl-pos-z" type="range" min="-300" max="300" step="5" value="-100" class="w-full cursor-pointer" />
+      </div>
+
+      <div class="pt-1 border-t border-pink-200">
+        <p class="font-semibold text-pink-800 mb-1.5">Rotación (grados)</p>
+        <div class="grid grid-cols-3 gap-2">
+          <div>
+            <label class="block text-pink-600 mb-0.5">Rot X</label>
+            <input id="ctrl-rot-x" type="number" step="15" value="-90" class="w-full rounded-xl border border-pink-300 bg-white px-2 py-1 text-center font-mono text-pink-900" />
+          </div>
+          <div>
+            <label class="block text-pink-600 mb-0.5">Rot Y</label>
+            <input id="ctrl-rot-y" type="number" step="15" value="0" class="w-full rounded-xl border border-pink-300 bg-white px-2 py-1 text-center font-mono text-pink-900" />
+          </div>
+          <div>
+            <label class="block text-pink-600 mb-0.5">Rot Z</label>
+            <input id="ctrl-rot-z" type="number" step="15" value="0" class="w-full rounded-xl border border-pink-300 bg-white px-2 py-1 text-center font-mono text-pink-900" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Escena AR.js -->
+  <a-scene
+    vr-mode-ui="enabled: false;"
+    renderer="logarithmicDepthBuffer: true; antialias: true;"
+    embedded
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;"
+  >
+    <a-assets>
+      <a-asset-item id="modelo-arbol" src="./arbol.glb"></a-asset-item>
+    </a-assets>
+
+    <a-entity light="type: ambient; color: #ffffff; intensity: 0.9"></a-entity>
+    <a-entity light="type: directional; color: #ffffff; intensity: 1" position="1 3 2"></a-entity>
+
+    <a-nft
+      id="nft-marker"
+      type="nft"
+      url="./marcador"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+    >
+      <a-entity
+        id="ar-model"
+        gltf-model="#modelo-arbol"
+        scale="50 50 50"
+        position="50 0 -100"
+        rotation="-90 0 0"
+      ></a-entity>
+    </a-nft>
+
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <script>
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const markerEl = document.getElementById('nft-marker');
+    const pill = document.getElementById('tracking-pill');
+    const dot = document.getElementById('tracking-dot');
+    const text = document.getElementById('tracking-text');
+
+    // Ocultar pantalla de carga al iniciar NFT
+    window.addEventListener('arjs-nft-loaded', () => {
+      loadingOverlay.classList.add('hidden');
+    });
+    setTimeout(() => loadingOverlay.classList.add('hidden'), 6000);
+
+    // Cambiar estado visual cuando encuentra o pierde el marcador
+    markerEl.addEventListener('markerFound', () => {
+      pill.className = 'pointer-events-auto inline-flex items-center gap-2 rounded-full border border-pink-400 bg-pink-500 px-4 py-2 text-xs font-bold text-white backdrop-blur-md shadow-md';
+      dot.className = 'h-2.5 w-2.5 rounded-full bg-white';
+      text.textContent = '¡Marcador detectado!';
+    });
+
+    markerEl.addEventListener('markerLost', () => {
+      pill.className = 'pointer-events-auto inline-flex items-center gap-2 rounded-full border border-pink-300 bg-rose-50/90 px-4 py-2 text-xs font-bold text-pink-700 backdrop-blur-md shadow-md';
+      dot.className = 'h-2.5 w-2.5 rounded-full bg-pink-400 animate-pulse';
+      text.textContent = 'Buscando marcador...';
+    });
+
+    // Controles en vivo
+    const panel = document.getElementById('calibration-panel');
+    document.getElementById('toggle-panel-btn').addEventListener('click', () => {
+      panel.classList.toggle('hidden');
+    });
+
+    const ctrlScale = document.getElementById('ctrl-scale');
+    const ctrlPosX = document.getElementById('ctrl-pos-x');
+    const ctrlPosY = document.getElementById('ctrl-pos-y');
+    const ctrlPosZ = document.getElementById('ctrl-pos-z');
+    const ctrlRotX = document.getElementById('ctrl-rot-x');
+    const ctrlRotY = document.getElementById('ctrl-rot-y');
+    const ctrlRotZ = document.getElementById('ctrl-rot-z');
+
+    function updateTransform() {
+      const s = ctrlScale.value;
+      const px = ctrlPosX.value;
+      const py = ctrlPosY.value;
+      const pz = ctrlPosZ.value;
+      const rx = ctrlRotX.value;
+      const ry = ctrlRotY.value;
+      const rz = ctrlRotZ.value;
+
+      document.getElementById('val-scale').textContent = s;
+      document.getElementById('val-pos-x').textContent = px;
+      document.getElementById('val-pos-y').textContent = py;
+      document.getElementById('val-pos-z').textContent = pz;
+
+      const model = document.getElementById('ar-model');
+      model.setAttribute('scale', `${s} ${s} ${s}`);
+      model.setAttribute('position', `${px} ${py} ${pz}`);
+      model.setAttribute('rotation', `${rx} ${ry} ${rz}`);
+    }
+
+    [ctrlScale, ctrlPosX, ctrlPosY, ctrlPosZ, ctrlRotX, ctrlRotY, ctrlRotZ].forEach(el => {
+      el.addEventListener('input', updateTransform);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      ctrlScale.value = 50;
+      ctrlPosX.value = 50;
+      ctrlPosY.value = 0;
+      ctrlPosZ.value = -100;
+      ctrlRotX.value = -90;
+      ctrlRotY.value = 0;
+      ctrlRotZ.value = 0;
+      updateTransform();
+    });
+  </script>
+</body>
+</html>
